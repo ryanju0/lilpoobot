@@ -6,6 +6,7 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
@@ -69,7 +70,9 @@ public class DriveSubsystem extends SubsystemBase {
           m_rearLeft.getPosition(),
           m_rearRight.getPosition()
       },
-      new Pose2d());
+      new Pose2d()
+      );
+      Pose2d visionMeasurement2d;
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
@@ -95,6 +98,11 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public Pose2d getPose() {
     return m_SwerveDrivePoseEstimator.getEstimatedPosition();
+  }
+  public void getVisionMeasurement(){
+    if (m_Limelight.isTargetVisible() == true){
+      m_SwerveDrivePoseEstimator.addVisionMeasurement(visionMeasurement2d, Timer.getFPGATimestamp());
+    }
   }
 
   /**
