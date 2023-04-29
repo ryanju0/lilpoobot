@@ -92,8 +92,8 @@ public class DriveSubsystem extends SubsystemBase {
       Nat.N1(),
       Nat.N1(),
       plant,
-      VecBuilder.fill(0),
-      VecBuilder.fill(0),
+      VecBuilder.fill(3.0),
+      VecBuilder.fill(0.03),
       m_prevTime);
 
   /** Creates a new DriveSubsystem. */
