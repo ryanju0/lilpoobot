@@ -13,20 +13,30 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.system.LinearSystem;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.Constants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.utils.SwerveUtils;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.Nat;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.estimator.KalmanFilter;
+import edu.wpi.first.math.estimator.UnscentedKalmanFilter;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.Limelight;
 
 public class DriveSubsystem extends SubsystemBase {
   private Limelight m_Limelight;
   private SwerveDrivePoseEstimator swervePoseEstimator;
-  private MAXSwerveModule[] mSwerveModules;
+  LinearSystem<N1,N1,N1> plant;
+  Pose2d visionMeasurement2d;
   // Create MAXSwerveModules
   private final MAXSwerveModule m_frontLeft = new MAXSwerveModule(
       DriveConstants.kFrontLeftDrivingCanId,
@@ -59,20 +69,32 @@ public class DriveSubsystem extends SubsystemBase {
   private SlewRateLimiter m_magLimiter = new SlewRateLimiter(DriveConstants.kMagnitudeSlewRate);
   private SlewRateLimiter m_rotLimiter = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
   private double m_prevTime = WPIUtilJNI.now() * 1e-6;
+  
+
 
   // Odometry class for tracking robot pose
-  SwerveDrivePoseEstimator m_SwerveDrivePoseEstimator = new SwerveDrivePoseEstimator(
+  private final SwerveDrivePoseEstimator m_SwerveDrivePoseEstimator = 
+    new SwerveDrivePoseEstimator(
       DriveConstants.kDriveKinematics,
       Rotation2d.fromDegrees(m_gyro.getAngle()),
-      new SwerveModulePosition[] {
-          m_frontLeft.getPosition(),
-          m_frontRight.getPosition(),
-          m_rearLeft.getPosition(),
-          m_rearRight.getPosition()
-      },
-      new Pose2d()
-      );
-      Pose2d visionMeasurement2d;
+        new SwerveModulePosition[] {
+            m_frontLeft.getPosition(),
+            m_frontRight.getPosition(),
+            m_rearLeft.getPosition(),
+            m_rearRight.getPosition()
+        },
+        new Pose2d(),
+        VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(5)),
+        VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(30)));
+    
+  private final KalmanFilter<N1 , N1 , N1> m_KalmanFilter = 
+    new KalmanFilter<N1, N1, N1>(
+      Nat.N1(),
+      Nat.N1(),
+      plant,
+      VecBuilder.fill(0),
+      VecBuilder.fill(0),
+      m_prevTime);
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
