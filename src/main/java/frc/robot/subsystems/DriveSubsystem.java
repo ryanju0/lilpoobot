@@ -14,8 +14,11 @@ import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.LinearSystem;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.ADIS16470_IMU;
@@ -35,7 +38,13 @@ import frc.robot.subsystems.Limelight;
 public class DriveSubsystem extends SubsystemBase {
   private Limelight m_Limelight;
   private SwerveDrivePoseEstimator swervePoseEstimator;
-  LinearSystem<N1,N1,N1> plant;
+  private final double kCOMDistance = 0.695; // m
+  private final double kMomentOfInertia = 1.65; // kg m^2
+  private final double kGearRatio = 225.0;
+  private double kLoopTime = 0.020;
+
+  LinearSystem<N2, N1, N1> plant =
+     LinearSystemId.createSingleJointedArmSystem(DCMotor.getNEO(2), kMomentOfInertia, kGearRatio);;
   Pose2d visionMeasurement2d;
   // Create MAXSwerveModules
   private final MAXSwerveModule m_frontLeft = new MAXSwerveModule(
@@ -87,14 +96,14 @@ public class DriveSubsystem extends SubsystemBase {
         VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(5)),
         VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(30)));
     
-  private final KalmanFilter<N1 , N1 , N1> m_KalmanFilter = 
-    new KalmanFilter<N1, N1, N1>(
-      Nat.N1(),
+  private final KalmanFilter<N2 , N1 , N1> m_KalmanFilter = 
+    new KalmanFilter<>(
+      Nat.N2(),
       Nat.N1(),
       plant,
-      VecBuilder.fill(3.0),
-      VecBuilder.fill(0.03),
-      m_prevTime);
+      VecBuilder.fill(0.015, 0.17),
+      VecBuilder.fill(0.01),
+      kLoopTime);
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {

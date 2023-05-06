@@ -49,6 +49,7 @@ public class ConeAlign extends CommandBase {
           true,
           false);
       }
+    }
     @Override
     public void end(boolean interrupted) {
         m_limelight.setLED(false);
