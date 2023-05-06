@@ -17,6 +17,7 @@ import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.system.LinearSystem;
+import edu.wpi.first.math.system.LinearSystemLoop;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.math.util.Units;
@@ -41,10 +42,13 @@ public class DriveSubsystem extends SubsystemBase {
   private final double kCOMDistance = 0.695; // m
   private final double kMomentOfInertia = 1.65; // kg m^2
   private final double kGearRatio = 225.0;
+  private final double kRobotMass = 60;//kilograms
+  private final double kWheelRadius = 0.05;//meters
+  private final double kBaseRadius = 0.5;//meters
   private double kLoopTime = 0.020;
 
-  LinearSystem<N2, N1, N1> plant =
-     LinearSystemId.createSingleJointedArmSystem(DCMotor.getNEO(2), kMomentOfInertia, kGearRatio);;
+  LinearSystem<N2, N2, N2> plant =
+     LinearSystemId.createDrivetrainVelocitySystem(DCMotor.getNEO(4), kRobotMass, kWheelRadius, kBaseRadius, kMomentOfInertia, kCOMDistance);
   Pose2d visionMeasurement2d;
   // Create MAXSwerveModules
   private final MAXSwerveModule m_frontLeft = new MAXSwerveModule(
@@ -96,14 +100,16 @@ public class DriveSubsystem extends SubsystemBase {
         VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(5)),
         VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(30)));
     
-  private final KalmanFilter<N2 , N1 , N1> m_KalmanFilter = 
+  private final KalmanFilter<N2 , N2, N2> m_KalmanFilter = 
     new KalmanFilter<>(
       Nat.N2(),
-      Nat.N1(),
+      Nat.N2(),
       plant,
-      VecBuilder.fill(0.015, 0.17),
-      VecBuilder.fill(0.01),
+      VecBuilder.fill(0.015, 0.17),//tbd
+      VecBuilder.fill(0.015, 0.17),//tbd
       kLoopTime);
+  // private final LinearSystemLoop<N2, N1, N1> m_loop =
+  //   new LinearSystemLoop<>(plant, m_controller, m_KalmanFilter, 12.0, kLoopTime);
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
