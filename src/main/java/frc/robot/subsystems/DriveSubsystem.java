@@ -30,6 +30,7 @@ import frc.robot.utils.SwerveUtils;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.Nat;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.controller.LinearQuadraticRegulator;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.estimator.KalmanFilter;
 import edu.wpi.first.math.estimator.UnscentedKalmanFilter;
@@ -108,8 +109,20 @@ public class DriveSubsystem extends SubsystemBase {
       VecBuilder.fill(0.015, 0.17),//tbd
       VecBuilder.fill(0.015, 0.17),//tbd
       kLoopTime);
-  // private final LinearSystemLoop<N2, N1, N1> m_loop =
-  //   new LinearSystemLoop<>(plant, m_controller, m_KalmanFilter, 12.0, kLoopTime);
+  private final LinearQuadraticRegulator<N2, N2, N2> m_LinearQuadraticRegulator =
+    new LinearQuadraticRegulator<>(
+          //CONSTANTS TBD
+          plant,
+          VecBuilder.fill(8.0, 0.1), // qelms. Velocity error tolerance, in radians per second. Decrease
+          // this to more heavily penalize state excursion, or make the controller behave more
+          // aggressively.
+          VecBuilder.fill(12.0, 0.1), // relms. Control effort (voltage) tolerance. Decrease this to more
+          // heavily penalize control effort, or make the controller less aggressive. 12 is a good
+          // starting point because that is the (approximate) maximum voltage of a battery.
+          kLoopTime); // Nominal time between loops. 0.020 for TimedRobot, but can be
+  // lower if using notifiers.
+  private final LinearSystemLoop<N2, N2, N2> m_loop =
+    new LinearSystemLoop<>(plant, m_LinearQuadraticRegulator, m_KalmanFilter, 12.0, kLoopTime);
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
